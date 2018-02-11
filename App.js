@@ -14,12 +14,16 @@ import * as tesseract from './components/tesseract';
 import Translate from './screens/TranslationResult';
 
 export default class App extends Component {
+  static navigationOptions = {
+    title: 'ImageTextTranslator',
+  };
+
   state = {
     image: null,
     language: '',
     path: null
   }
-  
+
   imagePickHandler = () => {
     const options = {
       title: 'Select Image',
@@ -48,24 +52,37 @@ export default class App extends Component {
   }
 
   translateHandler = () => {
-  
-    const text = tesseract.convertImageToText(this.state.path);
-    // console.log(text);
-    // Translate.ge
-    this.getTranslatedText(text);
+
+    tesseract.convertImageToText(this.state.path)
+      .then(res => this.getTranslatedText(res))
+      .catch(err => console.log(err))
+      .done();
+      // console.log(text);
+      // Translate.ge
+      ;
   }
 
   getTranslatedText = (text) => {
+    console.log(text);
+    let data = {
+      q: text,
+      target: this.state.language
+    }
     fetch('https://translation.googleapis.com/language/translate/v2?key=AIzaSyDfMXf5KeEZjrzFQEL-8J03MtLgXukBnI8', {
       method: 'POST',
-      body: {
-        'q': text,
-        'target': this.state.language
-      }
+      body: JSON.stringify(data),
     })
       .then(res => res.json())
-      .then(data => alert(data))
-      .catch(err => console.log(err))
+      .then(data => {
+        console.log(data)
+        this.props.navigation.navigate('Result', {
+          translatedText: data.data.translations[0].translatedText,
+          sourceText: text
+        })
+      })
+      .catch(err => console.log(err));
+
+
   }
 
   render() {
@@ -113,7 +130,7 @@ export default class App extends Component {
           </Picker>
         </View>
         <View style={{ flex: 0.5, paddingTop: 20 }}>
-          <Icon.Button name='ios-arrow-dropright' size={30} style={{width: 170}} onPress={this.translateHandler}>
+          <Icon.Button name='ios-arrow-dropright' size={30} style={{ width: 170 }} onPress={this.translateHandler}>
             <Text style={{ fontSize: 20 }}>Translate</Text>
           </Icon.Button>
         </View>

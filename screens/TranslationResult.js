@@ -1,25 +1,26 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 
-class TranslationResult extends React.Component {
+export default class TranslationResult extends React.Component {
   state = {
     sourceText: '',
     translatedText: '',
-    language: ''
+  }
+  componentWillMount(){
+    this.getSourceText();
   }
 
   getSourceText = () => {
     this.setState({
-      sourceText,
-      language,
+      sourceText: this.props.navigation.state.params.sourceText,
+      translatedText: this.props.navigation.state.params.translatedText,
     })
   }
 
-  
+
 
   render() {
-
-
+   
     return (
       <View>
         <Text>
