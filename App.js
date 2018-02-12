@@ -12,6 +12,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 
 import * as tesseract from './components/tesseract';
 import Translate from './screens/TranslationResult';
+import {Key} from './screens/apikey';
 
 export default class App extends Component {
   static navigationOptions = {
@@ -68,7 +69,7 @@ export default class App extends Component {
       q: text,
       target: this.state.language
     }
-    fetch('https://translation.googleapis.com/language/translate/v2?key=AIzaSyDfMXf5KeEZjrzFQEL-8J03MtLgXukBnI8', {
+    fetch('https://translation.googleapis.com/language/translate/v2?key=' + Key, {
       method: 'POST',
       body: JSON.stringify(data),
     })
