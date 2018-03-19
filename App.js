@@ -5,14 +5,18 @@ import {
   Text,
   View,
   Image,
-  Picker
+  Picker,
+  TouchableOpacity,
+  Modal
 } from 'react-native';
+import ImagePicker from 'react-native-image-crop-picker';
 import { showImagePicker } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+import * as RNFS from 'react-native-fs';
 
-import * as tesseract from './components/tesseract';
+import { convertImageToText } from './components/tesseract';
 import Translate from './screens/TranslationResult';
-import {Key} from './screens/apikey';
+import { yandexTranslateAPI } from './screens/apikey';
 
 export default class App extends Component {
   static navigationOptions = {
@@ -21,8 +25,9 @@ export default class App extends Component {
 
   state = {
     image: null,
-    language: '',
-    path: null
+    language: 'Hindi',
+    path: null,
+    langCode: 'hi',
   }
 
   imagePickHandler = () => {
@@ -32,10 +37,9 @@ export default class App extends Component {
       storageOptions: {
         skipBackup: true
       },
-      maxHeight: 320,
-      maxWidth: 240
+      maxHeight: 1000,
+      maxWidth: 1000,
     }
-
     showImagePicker(options, (response) => {
       if (response.didCancel) {
         return;
@@ -43,54 +47,66 @@ export default class App extends Component {
         return;
       } else {
         let source = { uri: response.uri };
-        console.log(source);
-        this.setState({
-          image: source,
-          path: response.path
-        });
+        ImagePicker.openCropper({
+          path: response.uri,
+          freeStyleCropEnabled: true,
+          hideBottomControls: true,
+          showCropGuidelines: false,
+          height: 1000,
+          width: 1000,
+        }).then(image => {
+          const path = image.path.replace('file://', '')
+          this.setState({
+            image: { uri: image.path },
+            path
+          })
+        })
+          .catch(e => {
+            this.setState({
+              image: source,
+              path: response.path
+            })
+          })
       }
     })
+
   }
 
   translateHandler = () => {
 
-    tesseract.convertImageToText(this.state.path)
+    convertImageToText(this.state.path)
       .then(res => this.getTranslatedText(res))
       .catch(err => console.log(err))
-      .done();
-      // console.log(text);
-      // Translate.ge
-      ;
+
   }
 
   getTranslatedText = (text) => {
-    console.log(text);
     let data = {
       q: text,
-      target: this.state.language
+      target: this.state.langCode
     }
-    fetch('https://translation.googleapis.com/language/translate/v2?key=' + Key, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    text = text.split(/\n| /).join(' ');
+    encodedText = encodeURI(text);
+    fetch(yandexTranslateAPI + "&text=" + encodedText + "&lang=en-" + this.state.langCode)
       .then(res => res.json())
       .then(data => {
         console.log(data)
         this.props.navigation.navigate('Result', {
-          translatedText: data.data.translations[0].translatedText,
+          translatedText: data.text[0],
+          translatedLanguage: this.state.language,
           sourceText: text
         })
       })
       .catch(err => console.log(err));
-
-
+    // this.props.navigation.navigate('Result', {
+    //   translatedText: 'data.text[0]',
+    //   translatedLanguage: this.state.language,
+    //   sourceText: text,
+    // })
   }
 
   render() {
-    console.log(this.state.path)
     let languages = [{
-      label: 'English', value: 'en'
-    }, {
       label: 'Hindi', value: 'hi'
     }, {
       label: 'French', value: 'fr'
@@ -103,30 +119,30 @@ export default class App extends Component {
     ));
 
     let image = this.state.image === null
-      ? <View style={{ height: '85%', borderColor: '#333', borderWidth: 2, padding: 5, marginBottom: 8, backgroundColor: '#ccc' }}><Text style={{ fontSize: 25 }}>Image Placeholder</Text></View>
+      ? <View style={{ height: '95%', borderColor: '#333', borderWidth: 2, padding: 5, marginBottom: 8, backgroundColor: '#ccc' }}><Text style={{ fontSize: 25 }}>Image Placeholder</Text></View>
       : <Image source={this.state.image} style={{
         borderColor: '#333',
         width: '100%',
         height: '85%',
         resizeMode: Image.resizeMode.contain,
-        marginBottom: 10
+        marginBottom: 10,
+        zIndex: 100,
       }} />;
-
+    console.log(this.state);
     return (
       <View style={styles.container}>
         <View style={{ height: '100%', paddingTop: 15, width: '90%', flex: 2.4, alignItems: 'center', borderBottomColor: '#333', borderBottomWidth: 2 }}>
-          {image}
-          <Icon.Button name="md-image" size={30} style={{ width: 170 }} onPress={this.imagePickHandler}>
-            <Text style={{ fontSize: 20 }}>Pick Image</Text>
-          </Icon.Button>
+          <TouchableOpacity style={{ height: '100%', width: '100%' }} onPress={this.imagePickHandler} >
+            {image}
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 0.3, flexDirection: 'row', height: '80%', width: '90%', paddingHorizontal: 20, paddingTop: 15, justifyContent: 'space-between', borderBottomWidth: 2, borderBottomColor: '#333', paddingBottom: 15 }}>
           <Text style={{ fontSize: 20, paddingTop: 10 }} >Language:</Text>
           <Picker
-            selectedValue={this.state.language}
+            selectedValue={this.state.langCode}
             prompt='Select translation language'
             style={{ backgroundColor: '#ccc', elevation: 5, width: '60%', }}
-            onValueChange={(itemValue, itemIndex) => this.setState({ language: itemValue })}>
+            onValueChange={(itemValue, itemIndex) => this.setState({ langCode: itemValue, language: languages[itemIndex].label })}>
             {pickerItem}
           </Picker>
         </View>
@@ -135,7 +151,6 @@ export default class App extends Component {
             <Text style={{ fontSize: 20 }}>Translate</Text>
           </Icon.Button>
         </View>
-
       </View>
     );
   }

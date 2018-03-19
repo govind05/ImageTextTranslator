@@ -3,13 +3,15 @@ package com.imagetexttranslator;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
-import com.reactlibrary.RNTesseractOcrPackage;
+import com.rnfs.RNFSPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
+import com.reactlibrary.RNTesseractOcrPackage;
+import com.imagepicker.ImagePickerPackage;
+import com.reactnative.ivpusic.imagepicker.PickerPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.soloader.SoLoader;
-import com.imagepicker.ImagePickerPackage;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,9 +28,11 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new RNFSPackage(),
+            new VectorIconsPackage(),
             new RNTesseractOcrPackage(),
-            new VectorIconsPackage(), 
-            new ImagePickerPackage()
+            new ImagePickerPackage(),
+            new PickerPackage()
       );
     }
 

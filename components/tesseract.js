@@ -8,7 +8,6 @@ export const convertImageToText = (imagePath) => {
     blacklist: '1234567890\'!"#$%&/()={}[]+*-_:;<>'
   };
   let text = '';
-  console.log('Started Ocr:')
   return RNTesseractOcr.recognize(imagePath, 'LANG_ENGLISH', tessOptions)
-    
+
 }
