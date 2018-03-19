@@ -11,3 +11,7 @@ export const convertImageToText = (imagePath) => {
   return RNTesseractOcr.recognize(imagePath, 'LANG_ENGLISH', tessOptions)
 
 }
+
+export const tesseractStop = () => {
+  return RNTesseractOcr.stop();
+}
