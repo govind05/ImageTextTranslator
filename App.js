@@ -13,11 +13,9 @@ import {
 import ImagePicker from 'react-native-image-crop-picker';
 import { showImagePicker } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
-import * as RNFS from 'react-native-fs';
-
 import { convertImageToText, tesseractStop } from './components/tesseract';
 import Translate from './screens/TranslationResult';
-import { yandexTranslateAPI } from './screens/apikey';
+import { yandexTranslateAPI, googleTranslateAPI } from './screens/apikey';
 
 export default class App extends Component {
   static navigationOptions = {
@@ -99,40 +97,37 @@ export default class App extends Component {
   }
 
   getTranslatedText = (text) => {
-
+    const { langCode, language } = this.state;
     let data = {
       q: text,
-      target: this.state.langCode
+      source: 'en',
+      target: langCode,
+      format: 'text'
     }
     text = text.split(/\n| /).join(' ');
     encodedText = encodeURI(text);
-    fetch(yandexTranslateAPI + "&text=" + encodedText + "&lang=en-" + this.state.langCode)
-      .then(res => res.json())
-      .then(data => {
-        this.setState({
-          loading: false
-        })
+    // fetch(googleTranslateAPI, {
+    //   method: 'POST',
+    //   body: JSON.stringify(data),
+    // })
+    fetch(yandexTranslateAPI + "&text=" + encodedText + "&lang=en-" + langCode)
+      .then(resYandex => resYandex.json())
+      .then(dataYandex => {
+        // console.log('Inside if response.', data)
+        this.resetState();
         this.props.navigation.navigate('Result', {
-          translatedText: data.text[0],
-          translatedLanguage: this.state.language,
-          sourceText: text
+          translatedText: dataYandex.text[0],
+          // translatedText: data.data.translations[0].translatedText,
+          translatedLanguage: language,
+          sourceText: text,
         })
       })
       .catch(err => {
-        this.setState({
-          loading: false
-        })
-        console.log(err)
-      });
-    // this.setState({
-    //   loading: false
-    // })
-    // this.props.navigation.navigate('Result', {
-    //   translatedText: 'data.text[0]',
-    //   translatedLanguage: this.state.language,
-    //   sourceText: text,
-    // })
+        alert('Network Error! Please try again later.')
+        this.resetState();
+      })
   }
+
 
   resetState = () => {
     this.setState({
@@ -156,20 +151,31 @@ export default class App extends Component {
     },];
 
     let pickerItem = languages.map(language => (
-      <Picker.Item key={language.value} label={language.label} value={language.value} />
+      <Picker.Item color='#333' key={language.value} label={language.label} value={language.value} />
     ));
 
-    let image = this.state.image === null
-      ? <View style={{ height: '95%', borderColor: '#333', borderWidth: 2, padding: 5, marginBottom: 8, backgroundColor: '#ccc' }}><Text style={{ fontSize: 25 }}>Image Placeholder</Text></View>
-      : <Image source={this.state.image} style={{
-        borderColor: '#333',
-        width: '100%',
-        height: '85%',
-        resizeMode: Image.resizeMode.contain,
-        marginBottom: 10,
-        zIndex: 100,
-      }} />;
-    console.log(this.state);
+    let image = this.state.image === null ?
+      <View style={styles.placeholderText}>
+        <View style={{ width: 100 }} >
+          <Text style={{
+            fontSize: 25,
+            textAlign: 'center'
+          }}>
+            Tap to add Image
+          </Text>
+        </View>
+      </View> :
+      <Image
+        source={this.state.image}
+        style={{
+          borderColor: '#333',
+          width: '100%',
+          height: '85%',
+          resizeMode: Image.resizeMode.contain,
+          marginBottom: 10,
+          zIndex: 100,
+        }} />;
+    // console.log(this.state);
     return (
       <View style={styles.container}>
         <Modal
@@ -212,7 +218,7 @@ export default class App extends Component {
           <Picker
             selectedValue={this.state.langCode}
             prompt='Select translation language'
-            style={{ backgroundColor: '#ccc', elevation: 5, width: '60%', }}
+            style={{ backgroundColor: '#fff', elevation: 5, width: '60%', marginLeft: 20 }}
             onValueChange={(itemValue, itemIndex) => this.setState({ langCode: itemValue, language: languages[itemIndex].label })}>
             {pickerItem}
           </Picker>
@@ -253,5 +259,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 30,
     elevation: 20,
-  }
+  },
+  placeholderText: {
+    height: '95%',
+    borderColor: '#333',
+    borderWidth: 2,
+    padding: 5,
+    marginBottom: 8,
+    backgroundColor: '#ccc',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
 });
