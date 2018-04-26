@@ -7,7 +7,6 @@ import TranslationResult from './screens/TranslationResult';
 const RootStack = StackNavigator({
   Home:{
     screen: App,
-   
   },
   Result: {
     screen: TranslationResult

@@ -8,7 +8,7 @@ export default class TranslationResult extends React.Component {
     title: 'Result',
   };
   render() {
-    const { sourceText, translatedText, translatedLanguage } = this.props.navigation.state.params;
+    const { sourceText, translatedText, translatedLanguage, sourceLanguage } = this.props.navigation.state.params;
     return (
       <ScrollView contentContainerStyle={styles.container}>
         <Icon name='done' size={55} color='#4CAF50' />
@@ -17,7 +17,7 @@ export default class TranslationResult extends React.Component {
         </Text>
         <View style={{ marginTop: 25 }} >
           <Text style={styles.textLabel} >
-            {"From English:".toUpperCase()}
+            {"From " + sourceLanguage + ":".toUpperCase()}
           </Text>
           <View style={styles.text} >
             <Text style={styles.textData}>
@@ -52,7 +52,9 @@ const styles = StyleSheet.create({
     marginTop: 15,
     borderWidth: 2,
     padding: 10,
-    width: dimensions.width
+    width: dimensions.width,
+    marginLeft: 10,
+    marginRight: 10,
   },
   textData: {
     fontSize: 20,

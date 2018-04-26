@@ -15,7 +15,7 @@ import { showImagePicker } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { convertImageToText, tesseractStop } from './components/tesseract';
 import Translate from './screens/TranslationResult';
-import { yandexTranslateAPI, googleTranslateAPI } from './screens/apikey';
+import { googleTranslateAPI, googleDetectionAPI } from './screens/apikey';
 
 export default class App extends Component {
   static navigationOptions = {
@@ -28,7 +28,8 @@ export default class App extends Component {
     path: null,
     langCode: 'hi',
     loading: false,
-    loadingText: 'Extracting Text...'
+    loadingText: 'Extracting Text...',
+    detectedLang: 'LANG_CUSTOM'
   }
 
   imagePickHandler = () => {
@@ -77,8 +78,7 @@ export default class App extends Component {
       loading: true
     }, () => {
       setTimeout(() => {
-
-        convertImageToText(this.state.path)
+        convertImageToText(this.state.path, this.state.detectedLang)
           .then(res => {
             this.setState({
               loadingText: "Translating Text..."
@@ -97,29 +97,32 @@ export default class App extends Component {
   }
 
   getTranslatedText = (text) => {
-    const { langCode, language } = this.state;
+    const { langCode, language, detectedLang } = this.state;
+    const source = detectedLang == 'LANG_CUSTOM' ? 'kn' : 'en';
+
     let data = {
       q: text,
-      source: 'en',
+      source,
       target: langCode,
       format: 'text'
     }
     text = text.split(/\n| /).join(' ');
     encodedText = encodeURI(text);
-    // fetch(googleTranslateAPI, {
-    //   method: 'POST',
-    //   body: JSON.stringify(data),
-    // })
-    fetch(yandexTranslateAPI + "&text=" + encodedText + "&lang=en-" + langCode)
-      .then(resYandex => resYandex.json())
-      .then(dataYandex => {
-        // console.log('Inside if response.', data)
+    fetch(googleTranslateAPI, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+      // fetch(yandexTranslateAPI + "&text=" + encodedText + "&lang=en-" + langCode)
+      .then(res => res.json())
+      .then(dataGoogle => {
+        console.log('Inside if response.', dataGoogle)
         this.resetState();
         this.props.navigation.navigate('Result', {
-          translatedText: dataYandex.text[0],
-          // translatedText: data.data.translations[0].translatedText,
+          // translatedText: dataYandex.text[0],
+          translatedText: dataGoogle.data.translations[0].translatedText,
           translatedLanguage: language,
           sourceText: text,
+          sourceLanguage: source == 'kn' ? 'Kannada' : 'English'
         })
       })
       .catch(err => {
@@ -143,17 +146,26 @@ export default class App extends Component {
     let languages = [{
       label: 'Hindi', value: 'hi'
     }, {
+      label: 'English', value: 'en'
+    }, {
       label: 'French', value: 'fr'
     }, {
       label: 'German', value: 'de'
     }, {
       label: 'Spanish', value: 'es'
     },];
+    let inputLang = [{
+      label: 'English', value: 'LANG_ENGLISH'
+    }, {
+      label: 'Kannada', value: 'LANG_CUSTOM'
+    }];
 
     let pickerItem = languages.map(language => (
       <Picker.Item color='#333' key={language.value} label={language.label} value={language.value} />
     ));
-
+    let pickerItemDetect = inputLang.map(language => (
+      <Picker.Item color='#333' key={language.value} label={language.label} value={language.value} />
+    ));
     let image = this.state.image === null ?
       <View style={styles.placeholderText}>
         <View style={{ width: 100 }} >
@@ -213,16 +225,22 @@ export default class App extends Component {
             {image}
           </TouchableOpacity>
         </View>
-        <View style={{ flex: 0.3, flexDirection: 'row', height: '80%', width: '90%', paddingHorizontal: 20, paddingTop: 15, justifyContent: 'space-between', borderBottomWidth: 2, borderBottomColor: '#333', paddingBottom: 15 }}>
-          <Text style={{ fontSize: 20, paddingTop: 10 }} >Language:</Text>
-          <Picker
-            selectedValue={this.state.langCode}
-            prompt='Select translation language'
-            style={{ backgroundColor: '#fff', elevation: 5, width: '60%', marginLeft: 20 }}
-            onValueChange={(itemValue, itemIndex) => this.setState({ langCode: itemValue, language: languages[itemIndex].label })}>
-            {pickerItem}
-          </Picker>
-        </View>
+        <Text style={{ fontSize: 20, paddingTop: 10 }} >Image Language:</Text>
+        <Picker
+          selectedValue={this.state.detectedLang}
+          prompt='Select input language'
+          style={{ backgroundColor: '#fff', elevation: 5, width: '60%', marginLeft: 20 }}
+          onValueChange={(itemValue, itemIndex) => this.setState({ detectedLang: itemValue })}>
+          {pickerItemDetect}
+        </Picker>
+        <Text style={{ fontSize: 20, paddingTop: 10 }} >Translated Language:</Text>
+        <Picker
+          selectedValue={this.state.langCode}
+          prompt='Select translation language'
+          style={{ backgroundColor: '#fff', elevation: 5, width: '60%', marginLeft: 20 }}
+          onValueChange={(itemValue, itemIndex) => this.setState({ langCode: itemValue, language: languages[itemIndex].label })}>
+          {pickerItem}
+        </Picker>
         <View style={{ flex: 0.5, paddingTop: 20 }}>
           <Icon.Button
             name='ios-arrow-dropright'
